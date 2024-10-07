@@ -1,35 +1,32 @@
-// pages/api/products.js
-import { collection, query, where, orderBy, limit, startAfter, getDocs } from "firebase/firestore";
-import { db } from "../../firebase";
-import Fuse from "fuse.js";
+// src/pages/api/products.js
+import { db } from '../../lib/firebaseConfig';
+import { collection, getDocs, query, orderBy, limit, where } from 'firebase/firestore';
+import Fuse from 'fuse.js';
+
+const productsPerPage = 10;
 
 export default async function handler(req, res) {
-  try {
-    const { page = 1, limit = 20, search = "", category = "", sort = "asc" } = req.query;
+  const { page = 1, search = '', category = '', sort = 'asc' } = req.query;
 
-    const productRef = collection(db, "products");
+  const productsRef = collection(db, 'products');
+  let q = query(productsRef, orderBy('price', sort === 'asc' ? 'asc' : 'desc'), limit(productsPerPage));
 
-    let q = query(productRef, orderBy("price", sort === "asc" ? "asc" : "desc"));
-
-    if (category) {
-      q = query(q, where("category", "==", category));
-    }
-
-    const snapshot = await getDocs(q);
-
-    let products = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-    // Apply search if needed
-    if (search) {
-      const fuse = new Fuse(products, { keys: ["title", "description"] });
-      products = fuse.search(search).map(result => result.item);
-    }
-
-    // Pagination logic
-    const paginatedProducts = products.slice((page - 1) * limit, page * limit);
-
-    res.status(200).json(paginatedProducts);
-  } catch (error) {
-    res.status(500).json({ error: "Failed to fetch products" });
+  if (category) {
+    q = query(productsRef, where('category', '==', category), orderBy('price', sort === 'asc' ? 'asc' : 'desc'), limit(productsPerPage));
   }
+
+  const snapshot = await getDocs(q);
+  const products = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+  // Filter using Fuse.js if search query is provided
+  if (search) {
+    const fuse = new Fuse(products, {
+      keys: ['title'], // Change this to your product's searchable fields
+      threshold: 0.3,
+    });
+    const results = fuse.search(search).map(result => result.item);
+    return res.status(200).json({ products: results.slice((page - 1) * productsPerPage, page * productsPerPage), total: results.length });
+  }
+
+  return res.status(200).json({ products: products.slice((page - 1) * productsPerPage, page * productsPerPage), total: products.length });
 }

@@ -103,8 +103,23 @@ export default function ProductListing({ initialProducts, initialCategories }) {
             className="search-input" 
           />
           <select value={selectedCategory} onChange={handleCategoryChange} className="category-select">
-            <option value="">All Categories</option>
-            {/* Add more options here as needed */}
+          <option value="">All Categories</option>
+          <option value="kitchen-accessories">kitchen-accessories</option>
+          <option value="groceries">groceries</option>
+          <option value="sports-accessories">sports-accessories</option>
+          <option value="beauty">beauty</option>
+          <option value="skin-care">skin-care</option>
+          <option value="mobile-accessories">mobile-accessories</option>
+          <option value="home-decoration">home-decoration</option>
+          <option value="sunglasses">sunglasses</option>
+          <option value="womens-shoes">womens-shoes</option>
+          <option value="mens-shirts">mens-shirts</option>
+          <option value="tops">tops</option>
+          <option value="womens-jewellery">womens-jewellery</option>
+          <option value="womens-bags">womens-bags</option>
+          <option value="fragrances">fragrances</option>
+          <option value="smartphones">smartphones</option>
+          <option value="furniture">Furniture</option>
             {categories.map((category) => (
               <option key={category.id} value={category.name}>{category.name}</option>
             ))}
