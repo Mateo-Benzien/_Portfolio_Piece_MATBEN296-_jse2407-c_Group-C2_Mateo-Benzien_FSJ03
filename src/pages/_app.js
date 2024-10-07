@@ -1,10 +1,11 @@
-import { useEffect } from 'react';
+// scr/pages/_app.js
+import { AuthProvider } from '../context/AuthContext';
 import Head from 'next/head';
 import '../styles/styles.css';
 
 function MyApp({ Component, pageProps }) {
   return (
-    <>
+    <AuthProvider>
       <Head>
         <meta charSet="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -15,7 +16,7 @@ function MyApp({ Component, pageProps }) {
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <Component {...pageProps} />
-    </>
+    </AuthProvider>
   );
 }
 
