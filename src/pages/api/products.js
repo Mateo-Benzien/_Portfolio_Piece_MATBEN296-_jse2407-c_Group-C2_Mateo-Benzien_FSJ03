@@ -1,32 +1,39 @@
-// src/pages/api/products.js
+// pages/api/products.js
 import { db } from '../../lib/firebaseConfig';
-import { collection, getDocs, query, orderBy, limit, where } from 'firebase/firestore';
-import Fuse from 'fuse.js';
-
-const productsPerPage = 10;
+import { collection, query, orderBy, limit, startAfter, getDocs } from 'firebase/firestore';
 
 export default async function handler(req, res) {
-  const { page = 1, search = '', category = '', sort = 'asc' } = req.query;
+  try {
+    const { page = 1, limit = 10, lastVisibleId = null } = req.query; // Page number, page size, and the last document ID
 
-  const productsRef = collection(db, 'products');
-  let q = query(productsRef, orderBy('price', sort === 'asc' ? 'asc' : 'desc'), limit(productsPerPage));
+    const productCollection = collection(db, 'products');
+    let q;
 
-  if (category) {
-    q = query(productsRef, where('category', '==', category), orderBy('price', sort === 'asc' ? 'asc' : 'desc'), limit(productsPerPage));
-  }
+    if (lastVisibleId) {
+      // If lastVisibleId is provided, fetch products starting after the last document
+      const lastDocSnapshot = await getDocs(query(productCollection, orderBy('name'), limit(1), startAfter(lastVisibleId)));
+      q = query(productCollection, orderBy('name'), startAfter(lastDocSnapshot), limit(parseInt(limit)));
+    } else {
+      // Initial query without any cursor
+      q = query(productCollection, orderBy('name'), limit(parseInt(limit)));
+    }
 
-  const snapshot = await getDocs(q);
-  const products = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-  // Filter using Fuse.js if search query is provided
-  if (search) {
-    const fuse = new Fuse(products, {
-      keys: ['title'], // Change this to your product's searchable fields
-      threshold: 0.3,
+    const querySnapshot = await getDocs(q);
+    const products = [];
+    querySnapshot.forEach((doc) => {
+      products.push({ id: doc.id, ...doc.data() });
     });
-    const results = fuse.search(search).map(result => result.item);
-    return res.status(200).json({ products: results.slice((page - 1) * productsPerPage, page * productsPerPage), total: results.length });
-  }
 
-  return res.status(200).json({ products: products.slice((page - 1) * productsPerPage, page * productsPerPage), total: products.length });
+    // Get the last document in the snapshot for pagination
+    const lastVisible = querySnapshot.docs[querySnapshot.docs.length - 1];
+
+    res.status(200).json({
+      products,
+      lastVisibleId: lastVisible ? lastVisible.id : null,
+      nextPage: lastVisible ? parseInt(page) + 1 : null,
+    });
+  } catch (error) {
+    console.error('Error fetching products:', error);
+    res.status(500).json({ error: 'Failed to fetch products' });
+  }
 }
