@@ -39,3 +39,4 @@ export const fetchProductById = async (id) => {
   const data = await response.json();
   return data;
 };
+
