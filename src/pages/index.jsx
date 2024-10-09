@@ -202,7 +202,7 @@ export default function ProductListing({ initialProducts, initialCategories }) {
       `}</style>
     </div>
   );
-}
+} 
 
 // Server-side data fetching
 export async function getServerSideProps(context) {
